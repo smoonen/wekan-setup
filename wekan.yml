@@ -1,0 +1,9 @@
+apps:
+  - script: main.js
+    instances: 4
+    env:
+      MONGO_URL: mongodb://127.0.0.1:27017/wekan
+      ROOT_URL: //
+      MAIL_URL: smtp://127.0.0.1:25/
+      PORT: 8080
+
