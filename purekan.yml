@@ -1,0 +1,49 @@
+# Ansible playbook to setup wekan on RHEL 7 VM
+
+- hosts: purekan.rtp.raleigh.ibm.com
+  tasks:
+    - name: Access EPEL repos
+      yum: name=http://download.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
+    - name: Install node.js
+      yum: name=nodejs
+    - name: Install MongoDB
+      yum: name=mongodb
+    - name: Install MongoDB server
+      yum: name=mongodb-server
+    - name: Start MongoDB now and on reboot
+      service: name=mongod enabled=yes state=started
+    - name: Install git
+      yum: name=git
+    - name: Install nginx
+      yum: name=nginx
+    - name: Start nginx now and on reboot
+      service: name=nginx enabled=yes state=started
+    - name: Install Node Package Manager
+      yum: name=npm
+    - name: Install Node Process Manager
+      npm: name=pm2 global=yes
+    - name: Create purekan base directory
+      file: path=/home/purekan state=directory
+    - name: Download and extract wekan
+      unarchive: src=https://github.com/wekan/wekan/releases/download/v0.10.1/wekan-0.10.1.tar.gz dest=/home/purekan/wekan creates=/home/purekan/wekan/bundle
+    - name: Checkout ancillary setup repo
+      git: repo=git://github.com/smoonen/wekan-setup dest=/home/purekan/setup-repo update=yes
+    - name: Symlink app definition into wekan folder
+      file: path=/home/purekan/wekan/bundle/wekan.yml state=link src=/home/purekan/setup-repo/wekan.yml
+    - name: Install all NPM dependencies
+      command: /bin/npm install chdir=/home/purekan/wekan/bundle/programs/server
+    - name: Persist PM2 on reboot
+      command: /bin/pm2 startup systemd creates=/etc/systemd/system/pm2.service
+    - name: Define PM2 application
+      command: /bin/pm2 start /home/purekan/wekan/bundle/wekan.yml
+    - name: Create SSL cert folder
+      file: path=/etc/nginx/ssl state=directory
+    - name: Create self-signed cert
+      command: openssl req -new -nodes -x509 -subj "/C=US/ST=NC/L=Durham/O=IBM/CN=purekan.rtp.raleigh.ibm.com" -days 3650 -keyout /etc/nginx/ssl/server.key -out /etc/nginx/ssl/server.crt -extensions v3_ca creates=/etc/nginx/ssl/server.key
+    - name: Symlink nginx config
+      file: path=/etc/nginx/conf.d/wekan.conf state=link src=/home/purekan/setup-repo/wekan.conf
+      notify: Restart nginx
+  handlers:
+    - name: Restart nginx
+      service: name=nginx state=restarted
+

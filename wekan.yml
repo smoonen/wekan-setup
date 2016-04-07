@@ -1,3 +1,5 @@
+# PM2 configuration for wekan server
+
 apps:
   - script: /home/purekan/wekan/bundle/main.js
     env:
