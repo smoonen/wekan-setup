@@ -28,6 +28,7 @@
       unarchive: src=https://github.com/wekan/wekan/releases/download/v0.10.1/wekan-0.10.1.tar.gz dest=/home/purekan/wekan creates=/home/purekan/wekan/bundle
     - name: Checkout ancillary setup repo
       git: repo=git://github.com/smoonen/wekan-setup dest=/home/purekan/setup-repo update=yes
+      notify: Restart nginx
     - name: Symlink app definition into wekan folder
       file: path=/home/purekan/wekan/bundle/wekan.yml state=link src=/home/purekan/setup-repo/wekan.yml
     - name: Install all NPM dependencies
